@@ -1,7 +1,7 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { config } from "./config.js";
 import { getSessionId, saveSessionId } from "./db.js";
-import { editMessageReplyMarkup, editMessageText, sendMessage } from "./telegramApi.js";
+import { editMessageReplyMarkup, editMessageText, sendLongMessage, sendMessage } from "./telegramApi.js";
 import { waitForConfirmation } from "./confirmations.js";
 import { isDangerousBashCommand } from "./dangerous.js";
 
@@ -139,5 +139,5 @@ export async function runAgentTurn(chatId: number, prompt: string): Promise<void
   }
 
   saveSessionId(chatId, newSessionId ?? null);
-  await sendMessage(chatId, finalText || "Готово.");
+  await sendLongMessage(chatId, finalText || "Готово.");
 }

@@ -34,6 +34,33 @@ export async function sendMessage(
   });
 }
 
+const TELEGRAM_MESSAGE_LIMIT = 4000; // Telegram's hard limit is 4096; leave some margin
+
+function splitIntoChunks(text: string, maxLength: number): string[] {
+  const chunks: string[] = [];
+  let remaining = text;
+  while (remaining.length > maxLength) {
+    let cut = remaining.lastIndexOf("\n", maxLength);
+    if (cut <= 0) cut = maxLength;
+    chunks.push(remaining.slice(0, cut));
+    remaining = remaining.slice(cut).replace(/^\n/, "");
+  }
+  if (remaining) chunks.push(remaining);
+  return chunks;
+}
+
+// sendMessage rejects anything over 4096 chars — split long agent replies
+// into several messages instead of losing the whole reply to that error.
+export async function sendLongMessage(
+  chatId: number,
+  text: string,
+  opts?: { disableNotification?: boolean }
+): Promise<void> {
+  for (const chunk of splitIntoChunks(text, TELEGRAM_MESSAGE_LIMIT)) {
+    await sendMessage(chatId, chunk, opts);
+  }
+}
+
 export async function editMessageText(chatId: number, messageId: number, text: string): Promise<void> {
   try {
     await call("editMessageText", { chat_id: chatId, message_id: messageId, text });
