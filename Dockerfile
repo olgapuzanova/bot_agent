@@ -4,8 +4,9 @@ WORKDIR /app
 
 # python3/make/g++/cmake: better-sqlite3 + whisper.cpp (via nodejs-whisper) build from source.
 # ffmpeg: nodejs-whisper shells out to it to convert voice notes to 16kHz mono WAV.
+# curl: nodejs-whisper shells out to it to download the ggml model file.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 make g++ cmake git ffmpeg ca-certificates \
+    && apt-get install -y --no-install-recommends python3 make g++ cmake git ffmpeg curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json* ./
