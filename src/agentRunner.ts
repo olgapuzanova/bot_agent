@@ -1,9 +1,12 @@
+import fs from "node:fs";
+import path from "node:path";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { config } from "./config.js";
 import { getSessionId, saveSessionId } from "./db.js";
-import { editMessageReplyMarkup, editMessageText, sendLongMessage, sendMessage } from "./telegramApi.js";
+import { editMessageReplyMarkup, editMessageText, sendDocument, sendLongMessage, sendMessage } from "./telegramApi.js";
 import { waitForConfirmation } from "./confirmations.js";
 import { isDangerousBashCommand } from "./dangerous.js";
+import { filesChangedSince, snapshotFiles } from "./files.js";
 
 const SYSTEM_PROMPT_APPEND = `
 You are reached exclusively through a private Telegram chat with your one operator — there is no terminal on the other end.
@@ -53,6 +56,7 @@ function describeToolUse(toolName: string, input: Record<string, unknown>): stri
 
 export async function runAgentTurn(chatId: number, prompt: string): Promise<void> {
   const sessionId = getSessionId(chatId);
+  const filesBefore = snapshotFiles(config.agentWorkdir);
 
   let progressMessageId: number | null = null;
   let progressText = "";
@@ -140,4 +144,14 @@ export async function runAgentTurn(chatId: number, prompt: string): Promise<void
 
   saveSessionId(chatId, newSessionId ?? null);
   await sendLongMessage(chatId, finalText || "Готово.");
+
+  const changedFiles = filesChangedSince(config.agentWorkdir, filesBefore);
+  for (const filePath of changedFiles) {
+    try {
+      const buffer = fs.readFileSync(filePath);
+      await sendDocument(chatId, buffer, path.relative(config.agentWorkdir, filePath));
+    } catch (err) {
+      console.error(`Failed to send file ${filePath}`, err);
+    }
+  }
 }
