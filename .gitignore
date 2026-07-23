@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+data/
+workspace/
+whisper-models/
+*.sqlite
+*.sqlite-journal
+.DS_Store
